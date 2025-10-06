@@ -39,14 +39,14 @@ class KoBERTScorer:
             return_tensors="pt", padding="max_length", truncation=True,
             max_length=self.max_length
         )
-        input_ids = enc["input_ids"].to(self.device)          # (1, T)
-        attn      = enc["attention_mask"].to(self.device)     # (1, T)
+        input_ids = enc["input_ids"].to(self.device)          
+        attn      = enc["attention_mask"].to(self.device)     
         token_type_ids = enc.get("token_type_ids", None)
         if token_type_ids is not None:
-            token_type_ids = token_type_ids.to(self.device)   # (1, T)
+            token_type_ids = token_type_ids.to(self.device)   
 
         T = input_ids.size(1)
-        ids = input_ids[0]                                    # (T,)
+        ids = input_ids[0]                                   
         sep_id = self.tokenizer.sep_token_id
 
         sep_positions = (ids == sep_id).nonzero(as_tuple=False).view(-1).tolist()
@@ -75,13 +75,13 @@ class KoBERTScorer:
 
             if use_amp:
                 with torch.amp.autocast('cuda', enabled=True, dtype=self.amp_dtype):
-                    logits = self.model(input_ids=input_rep, attention_mask=attn_rep).logits  # (B, T, V)
+                    logits = self.model(input_ids=input_rep, attention_mask=attn_rep).logits 
             else:
                 logits = self.model(input_ids=input_rep, attention_mask=attn_rep).logits
 
             lprobs = self.lsm(logits)
             target_tokens = ids[pos_chunk]      
-            selected = lprobs[torch.arange(B, device=self.device), torch.tensor(pos_chunk, device=self.device), target_tokens]  # (B,)
+            selected = lprobs[torch.arange(B, device=self.device), torch.tensor(pos_chunk, device=self.device), target_tokens]  
             total_nll += (-selected).sum().item()
             total_cnt += B
 

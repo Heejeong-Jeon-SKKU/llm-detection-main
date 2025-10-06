@@ -49,26 +49,26 @@ class MBARTScorer:
         outputs = self.model(
             input_ids=encoded_src['input_ids'],
             attention_mask=encoded_src['attention_mask'],
-            labels=encoded_tgt['input_ids'],                      # ★ 중요
-            decoder_attention_mask=encoded_tgt['attention_mask']  # 권장
+            labels=encoded_tgt['input_ids'],                    
+            decoder_attention_mask=encoded_tgt['attention_mask'] 
         )
-        logits = outputs.logits  # [B, T, V]
+        logits = outputs.logits  
 
         shift_logits = logits[:, :-1, :].contiguous()                       
-        shift_labels = encoded_tgt['input_ids'][:, 1:].contiguous()           # [B, T-1]
-        shift_mask   = encoded_tgt['attention_mask'][:, 1:].contiguous()      # [B, T-1]
+        shift_labels = encoded_tgt['input_ids'][:, 1:].contiguous()          
+        shift_mask   = encoded_tgt['attention_mask'][:, 1:].contiguous()     
 
         T = min(shift_logits.size(1), shift_labels.size(1), shift_mask.size(1))
         shift_logits = shift_logits[:, :T, :]
         shift_labels = shift_labels[:, :T]
         shift_mask   = shift_mask[:, :T]
 
-        log_probs = self.lsm(shift_logits)                          # [B, T, V]
+        log_probs = self.lsm(shift_logits)                          
         gold_log_probs = log_probs.gather(
             dim=-1, index=shift_labels.unsqueeze(-1)
-        ).squeeze(-1)                                               # [B, T]
+        ).squeeze(-1)                                              
 
-        token_counts = shift_mask.sum(dim=1).clamp(min=1)           # [B]
+        token_counts = shift_mask.sum(dim=1).clamp(min=1)           
         nll = - (gold_log_probs * shift_mask).sum(dim=1) / token_counts
         return nll 
 
